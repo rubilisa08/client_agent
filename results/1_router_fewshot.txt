@@ -1,0 +1,32 @@
+── ① 의도 분류 ─────────────────────────────
+[LLM 라우터] n=120  정확도 0.950  macro F1 0.953
+
+               precision    recall  f1-score   support
+
+  ORDER_PLACE      0.909     1.000     0.952        30
+ PRODUCT_INFO      1.000     1.000     1.000        30
+     SHIPPING      0.963     0.867     0.912        30
+RETURN_REFUND      0.966     0.933     0.949        30
+
+    micro avg      0.958     0.950     0.954       120
+    macro avg      0.959     0.950     0.953       120
+ weighted avg      0.959     0.950     0.953       120
+
+[혼동 행렬] 행=정답, 열=예측
+               ORDER_PLACE  PRODUCT_INFO  SHIPPING  RETURN_REFUND
+ORDER_PLACE             30             0         0              0
+PRODUCT_INFO             0            30         0              0
+SHIPPING                 3             0        26              1
+RETURN_REFUND            0             0         1             28
+
+[오분류 6건] — 여기를 읽는 것이 개선의 출발점이다
+  [RETURN_REFUND → SHIPPING] conf=0.78  검품 중으로 표시되는데 앞으로 얼마나 더 기다려야 하나요?
+  [SHIPPING → RETURN_REFUND] conf=0.99  반품 접수를 했는데 회수하러 언제 오시는지 궁금합니다.
+  [SHIPPING → ORDER_PLACE] conf=0.98  품절 상품을 빼고 나머지만 먼저 보내주시는 것이 가능한가요?
+  [SHIPPING → ORDER_PLACE] conf=0.98  금요일에 주문하면 월요일에는 받아볼 수 있을까요?
+  [SHIPPING → ORDER_PLACE] conf=0.62  주소를 잘못 입력한 것 같은데 어떻게 하면 좋을까요?
+  [RETURN_REFUND → OTHER] conf=0.90  같은 내용으로 벌써 세 번째 문의드리는데 처리가 안 됩니다.
+
+
+══ 요약 ══
+  ① 의도 분류   정확도 0.950 · macro F1 0.953

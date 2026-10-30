@@ -1,0 +1,72 @@
+── ① 의도 분류 ─────────────────────────────
+[LLM 라우터] n=120  정확도 0.950  macro F1 0.953
+
+               precision    recall  f1-score   support
+
+  ORDER_PLACE      0.909     1.000     0.952        30
+ PRODUCT_INFO      1.000     1.000     1.000        30
+     SHIPPING      0.963     0.867     0.912        30
+RETURN_REFUND      0.966     0.933     0.949        30
+
+    micro avg      0.958     0.950     0.954       120
+    macro avg      0.959     0.950     0.953       120
+ weighted avg      0.959     0.950     0.953       120
+
+[혼동 행렬] 행=정답, 열=예측
+               ORDER_PLACE  PRODUCT_INFO  SHIPPING  RETURN_REFUND
+ORDER_PLACE             30             0         0              0
+PRODUCT_INFO             0            30         0              0
+SHIPPING                 3             0        26              1
+RETURN_REFUND            0             0         1             28
+
+[오분류 6건] — 여기를 읽는 것이 개선의 출발점이다
+  [RETURN_REFUND → SHIPPING] conf=0.67  검품 중으로 표시되는데 앞으로 얼마나 더 기다려야 하나요?
+  [SHIPPING → RETURN_REFUND] conf=0.99  반품 접수를 했는데 회수하러 언제 오시는지 궁금합니다.
+  [SHIPPING → ORDER_PLACE] conf=0.97  품절 상품을 빼고 나머지만 먼저 보내주시는 것이 가능한가요?
+  [SHIPPING → ORDER_PLACE] conf=0.86  금요일에 주문하면 월요일에는 받아볼 수 있을까요?
+  [SHIPPING → ORDER_PLACE] conf=0.58  주소를 잘못 입력한 것 같은데 어떻게 하면 좋을까요?
+  [RETURN_REFUND → OTHER] conf=0.61  같은 내용으로 벌써 세 번째 문의드리는데 처리가 안 됩니다.
+
+── ② 1턴 답변 ─────────────────────────────
+[채점기 자기 검증] 모범 답안 34건 중 실패 0건 ✅
+채점 32건 / 통과 25건 (78.1%)   (자동 판정 불가 2건 제외)
+
+[기대 행동별]
+              건수  통과       통과율
+기대                            
+ANSWER        22  19  0.863636
+ASK            8   5  0.625000
+OUT_OF_SCOPE   2   1  0.500000
+
+[행동 판정 혼동] 행=기대, 열=실제
+실제            ANSWER  ASK  OUT_OF_SCOPE
+기대                                     
+ANSWER            20    2             0
+ASK                3    5             0
+OUT_OF_SCOPE       1    0             1
+
+[실패 유형]
+action               6
+ASK 인데 되묻는 문장이 아님    2
+tools 미호출            2
+must 누락              1
+
+[실패 사례] — 여기를 읽는 것이 개선의 출발점이다
+  C-009 기대=ASK 실제=ANSWER  action: 기대 ASK != 실제 ANSWER; ASK 인데 되묻는 문장이 아님
+      답변: 트래블 키트 4종은 화장품으로 구매일로부터 30일 이내, 미개봉 상태라면 반품 가능합니다. O-1010은 반품 접수 내역이 없으며, 개봉하셨다면 반품은 불가합니다
+  C-018 기대=ANSWER 실제=ANSWER  tools 미호출: ['get_product_detail']
+      답변: 브라·팬티 세트 80A를 선택하시면 팬티는 95 사이즈로 매칭되어 출고됩니다. 브라 1개와 팬티 1장 구성이며, 팬티 개별 사이즈 선택은 불가합니다.
+  C-024 기대=ANSWER 실제=ASK  action: 기대 ANSWER != 실제 ASK; tools 미호출: ['get_product_detail']; must 누락: "신축성"
+      답변: 사이즈 표기 차이에 따른 반품은 고객 부담이며, 전체 반품 배송비는 5,000원입니다. 다만 주문 건 확인이 필요하니 주문번호를 알려주시면 반품 가능 여부를 확인
+  C-027 기대=ASK 실제=ANSWER  action: 기대 ASK != 실제 ANSWER
+      답변: 기본 티셔츠의 당일배송은 배송받으실 지역에 따라 제공 여부가 달라집니다. 지역을 알려주시면 확인해 드리겠습니다.
+  C-029 기대=ASK 실제=ANSWER  action: 기대 ASK != 실제 ANSWER; ASK 인데 되묻는 문장이 아님
+      답변: 오늘 오전 11시 이전 주문은 당일 출고되며, 11시 이후 주문은 익영업일 출고됩니다. 주말·공휴일에는 출고하지 않고, 주문제작 또는 당일 출고 대상이 아닌 상품
+  C-032 기대=ANSWER 실제=ASK  action: 기대 ANSWER != 실제 ASK
+      답변: 전체 반품이면 티셔츠 3장이라도 반품 배송비는 왕복 5,000원입니다. 다만 주문 건의 반품 진행 상태 확인이 필요하시면 주문번호를 알려주세요.
+  C-034 기대=OUT_OF_SCOPE 실제=ANSWER  action: 기대 OUT_OF_SCOPE != 실제 ANSWER
+      답변: 시계 수리는 제조사 A/S 대상이라 모두몰에서 접수·확인이 불가합니다. 해당 제조사 고객센터로 문의해 주세요.
+
+══ 요약 ══
+  ① 의도 분류   정확도 0.950 · macro F1 0.953
+  ② 1턴 답변    통과율 78.1% (32건)
